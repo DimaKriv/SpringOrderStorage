@@ -11,11 +11,12 @@ import java.util.stream.Collectors;
 @WebServlet("/api/orders")
 public class Task1Servelet extends HttpServlet {
 
-    private static int id = 0;
+    private Database activeDatabase;
+
     @Override
     public void init() throws ServletException {
         super.init();
-        id = 0;
+       activeDatabase = Database.init();
     }
 
     @Override
@@ -29,11 +30,27 @@ public class Task1Servelet extends HttpServlet {
         }
     }
 
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String stringID = request.getParameter("id");
+        if (stringID.matches("\\d+")) {
+            String output = activeDatabase.getJsonString(Integer.parseInt(stringID));
+            response.setContentType("application/json");
+            if (output != null) {
+                response.getWriter().println(output);
+            }
+        }
+    }
+
     private String addIdToJsonString(String jsonString) {
         if (jsonString.contains("\"id\":")) {
             jsonString = JsonParser.deleteOrderId(jsonString);
         }
-        return "{\"id\":" + id++ + ", " + jsonString.trim().substring(1);
+        int jsonId = activeDatabase.createNewId();
+        String output = "{\"id\":" + jsonId + ", " + jsonString.trim().substring(1);
+        activeDatabase.saveStringJson(jsonId, output);
+        return output;
     }
 
 /*    public static void main(String[] args) {
