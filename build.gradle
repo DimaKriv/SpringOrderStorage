@@ -11,6 +11,22 @@ sourceCompatibility = 11
 
 dependencies {
     compileOnly 'javax.servlet:javax.servlet-api:4.0.1'
+
+    compileOnly group: 'org.projectlombok',
+            name: 'lombok',
+            version: '1.18.10'
+
+    annotationProcessor group: 'org.projectlombok',
+            name: 'lombok',
+            version: '1.18.10'
+
+    compile group: 'org.postgresql',
+            name: 'postgresql',
+            version: '42.2.7'
+
+    compile group: 'org.apache.commons',
+            name: 'commons-dbcp2',
+            version: '2.7.0'
 }
 
 gretty {
