@@ -1,7 +1,6 @@
 package prax2;
 
 
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -12,31 +11,26 @@ import java.util.stream.Collectors;
 @WebServlet("orders/form")
 public class Task31Servelet extends HttpServlet {
 
-    private Database activeDatabase;
-
-    @Override
-    public void init() throws ServletException {
-        super.init();
-        activeDatabase = Database.init();
-    }
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String form = request.getReader().lines().collect(Collectors.joining("\n"));
-        int id = activeDatabase.createNewId();
-        String jsonString = formToJsonString(id, form);
-        activeDatabase.saveStringJson(id, jsonString);
+        //int id = activeDatabase.createNewId();
+        String jsonString = formToJsonString(form);
+      //  int id = activeDatabase.saveStringJson(jsonString);
         response.setContentType("text/plain");
-        response.getWriter().print(id);
+        response.getWriter().print(OrderDao.getDAO().saveOrderReturningId(jsonString));
     }
 
-    private String formToJsonString(int id, String form) {
+    private String formToJsonString( String form) {
         String[] pairs = form.split("\n");
-        String jsonString = "{\"id\":"+ id;
-        for (String pair: pairs) {
-            String[] pairMas = pair.split("=");
-            jsonString += ", \"" + pairMas[0].trim() +"\": \"" + pairMas[1] +"\"";
+        String jsonString = "{";
+        for (int i = 0; i < pairs.length; i++) {
+            String[] pairMas = pairs[i].split("=");
+            if (i > 0) { jsonString += ","; }
+            jsonString += "\"" + pairMas[0].trim() +"\": \"" + pairMas[1] +"\"";
         }
         jsonString += "}";
         return jsonString;
     }
+
 }

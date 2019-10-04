@@ -1,0 +1,1 @@
+INSERT INTO orders(json) VALUES(?) returning id, json;

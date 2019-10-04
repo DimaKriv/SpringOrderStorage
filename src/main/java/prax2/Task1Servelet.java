@@ -1,6 +1,5 @@
 package prax2;
 
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -11,20 +10,20 @@ import java.util.stream.Collectors;
 @WebServlet("/api/orders")
 public class Task1Servelet extends HttpServlet {
 
-    private Database activeDatabase;
-
-    @Override
-    public void init() throws ServletException {
-        super.init();
-       activeDatabase = Database.init();
-    }
+    private static final String APP_JSON = "application/json";
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         if (request.getContentType() != null  && request.getContentType().equals("application/json")) {
-            response.setContentType("application/json");
-            response.getWriter().print(addIdToJsonString(request.getReader().lines()
-                    .collect(Collectors.joining("\n"))));
+            response.setContentType(APP_JSON);
+            //response.getWriter().print(
+                    //addIdToJsonString(request.getReader().lines()
+                    //.collect(Collectors.joining("\n"))));
+            String jsonString = request.getReader().lines().collect(Collectors.joining("\n"));
+            if (jsonString.contains("\"id\":")) {
+                jsonString = JsonParser.deleteOrderId(jsonString);
+            }
+            response.getWriter().println(OrderDao.getDAO().saveOrderAndReturnOrder(jsonString));
         } else {
             response.getWriter().println(request.getContextPath());
         }
@@ -33,32 +32,23 @@ public class Task1Servelet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String stringID = request.getParameter("id");
-        if (stringID.matches("\\d+")) {
-            String output = activeDatabase.getJsonString(Integer.parseInt(stringID));
-            response.setContentType("application/json");
-            if (output != null) {
-                response.getWriter().println(output);
+        if (request.getParameterMap().isEmpty()) {
+            response.setContentType(APP_JSON);
+            //System.out.println("arr");
+            response.getWriter().print(OrderDao.getDAO().getAllOrders());
+        } else {
+            String stringID = request.getParameter("id");
+            if (stringID.matches("\\d+")) {
+                // String output = activeDatabase.getJsonString(Integer.parseInt(stringID));
+                response.setContentType(APP_JSON);
+                response.getWriter().println(OrderDao.getDAO().getOrder(Long.parseLong(stringID)));
+                //  if (output != null) {
+                //     response.getWriter().println(output);
+                // }
+            } else {
+                response.getWriter().println("Id not specified");
             }
         }
     }
 
-    private String addIdToJsonString(String jsonString) {
-        if (jsonString.contains("\"id\":")) {
-            jsonString = JsonParser.deleteOrderId(jsonString);
-        }
-        int jsonId = activeDatabase.createNewId();
-        String output = "{\"id\":" + jsonId + ", " + jsonString.trim().substring(1);
-        activeDatabase.saveStringJson(jsonId, output);
-        return output;
-    }
-
-/*    public static void main(String[] args) {
-        System.out.println(skipNameIndex(0, "\"g\\\"ard\""));
-        System.out.println();
-        System.out.println("{\"id\": {\"der\":1, \"i\":[]}}".length());
-        System.out.println(skipChildIndex(0, "{\"id\": {\"der\":1, \"i\":[]}}"));
-        System.out.println(deleteOrderId("{\"rot\": {\"der\":1, \"i\":[]}, \"id\":" +
-                " {\"der\":1, \"i\":[]}, \"dir\": {\"der\":1, \"i\":[]}}"));
-    }*/
 }
