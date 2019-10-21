@@ -1,1 +1,1 @@
-SELECT * FROM orders;
+SELECT * FROM order_task LEFT JOIN order_row o on order_task.id = o.order_id;

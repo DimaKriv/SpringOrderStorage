@@ -27,6 +27,10 @@ dependencies {
     compile group: 'org.apache.commons',
             name: 'commons-dbcp2',
             version: '2.7.0'
+
+    compile group: 'com.fasterxml.jackson.core',
+            name: 'jackson-databind',
+            version: '2.9.10'
 }
 
 gretty {

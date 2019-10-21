@@ -1,5 +1,9 @@
 package prax2;
 
+import prax2.orderdao.ConnectionInfo;
+import prax2.orderdao.DatabaseConnection;
+import prax2.orderdao.OrderDao;
+
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;

@@ -1,7 +1,6 @@
-package prax2;
+package prax2.orderdao;
 
 import org.apache.commons.dbcp2.BasicDataSource;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 

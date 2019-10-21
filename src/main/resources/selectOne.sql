@@ -1,1 +1,1 @@
-SELECT * FROM orders WHERE id = ?;
+SELECT * FROM order_task LEFT JOIN order_row ON order_row.order_id=order_task.id WHERE id = ?;

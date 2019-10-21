@@ -20,12 +20,23 @@ public class Task2Servlet extends HttpServlet {
     private static String reverseJson(String input) {
         int index = input.indexOf("\"");
         while (index > 0) {
-            int end = JsonParser.skipNameIndex(index, input) + 1;
+            int end = skipNameIndex(index, input) + 1;
             input = input.substring(0, index) + new StringBuffer(input.substring(index, end)).reverse()
                     + input.substring(end);
             //System.out.println(input);
             index = input.indexOf("\"", end);
         }
         return input;
+    }
+
+    private static int skipNameIndex(int index, String input) {
+        index++;
+        while(input.length() >  index  && input.charAt(index) != '"') {
+            if (input.charAt(index) == '\\') {
+                index++;
+            }
+            index++;
+        }
+        return index;
     }
 }

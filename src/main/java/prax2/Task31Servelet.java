@@ -1,6 +1,8 @@
 package prax2;
 
 
+import prax2.orderdao.OrderDao;
+
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -18,7 +20,7 @@ public class Task31Servelet extends HttpServlet {
         String jsonString = formToJsonString(form);
       //  int id = activeDatabase.saveStringJson(jsonString);
         response.setContentType("text/plain");
-        response.getWriter().print(OrderDao.getDAO().saveOrderReturningId(jsonString));
+        response.getWriter().print(OrderDao.getDAO().saveOrderReturningId(JsonParser.createOrder(jsonString)));
     }
 
     private String formToJsonString( String form) {
