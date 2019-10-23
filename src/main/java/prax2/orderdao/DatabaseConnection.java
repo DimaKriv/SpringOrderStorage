@@ -1,35 +1,34 @@
 package prax2.orderdao;
 
 import org.apache.commons.dbcp2.BasicDataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
 
-
+@Component
+@PropertySource("classpath:/application.properties")
 public class DatabaseConnection {
-    private  BasicDataSource basicDataSource = null;
 
-    public void createBasicDataSource(ConnectionInfo info, int maxConnection) {
-        basicDataSource = new BasicDataSource();
+    @Autowired
+    public Environment env;
+
+    private static final int MAX_CONNECTION_POOL = 2;
+
+    @Bean
+    public BasicDataSource createBasicDataSource() {
+        ConnectionInfo info = new ConnectionInfo(env.getProperty("dbUrl")
+                , env.getProperty("dbUser"), env.getProperty("dbPassword"));
+        BasicDataSource basicDataSource = new BasicDataSource();
         basicDataSource.setDriverClassName("org.postgresql.Driver");
         basicDataSource.setUrl(info.getDbUrl());
         basicDataSource.setUsername(info.getDbUser());
         basicDataSource.setPassword(info.getDbPss());
-        basicDataSource.setMaxTotal(maxConnection);
+        basicDataSource.setMaxTotal(MAX_CONNECTION_POOL);
+        return basicDataSource;
     }
 
-    public Connection getConnection() throws SQLException {
-        if (basicDataSource != null) {
-            //System.out.println(basicDataSource.getNumActive() );
-            return basicDataSource.getConnection();
-        } return null;
-    }
 
-    public void close()  {
-        try {
-            basicDataSource.close();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }
 

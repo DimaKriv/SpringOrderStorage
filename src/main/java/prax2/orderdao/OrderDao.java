@@ -1,8 +1,13 @@
 package prax2.orderdao;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import prax2.orderpojo.Order;
 import prax2.orderpojo.OrderRow;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,187 +16,110 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Component
+@Transactional
 public class OrderDao {
 
-    private static OrderDao activeOrderDao = null;
-    private DatabaseConnection activeConnection;
-    private List<String> insertCommands = null;
+    private JdbcTemplate template;
+    //private List<String> insertCommands = null;
     private List<String> selectAllCommands = null;
     private List<String> selectOneCommands = null;
-    private List<String> insertAndReturnCommands = null;
+   // private List<String> insertAndReturnCommands = null;
     private List<String> deleteCommands = null;
 
-    private OrderDao(DatabaseConnection connection) {
-        activeConnection = connection;
+    @Autowired
+    public OrderDao(JdbcTemplate template) {
+        this.template = template;
     }
 
     public long saveOrderReturningId(Order order)  {
-        if (insertCommands == null) {
-            insertCommands = new SQLReader().readSQL("insert.sql");
+        var orderNumber = Map.of("order_number", order.getOrderNumber());
+        Number id =  new SimpleJdbcInsert(template).withTableName("order_task")
+                .usingGeneratedKeyColumns("id").executeAndReturnKey(orderNumber);
+        List<Map<String, Object>> batchValues = new ArrayList<>(order.getOrderRows().size());
+        for (OrderRow row : order.getOrderRows()) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("item_name", row.getItemName());
+            map.put("quantity", row.getQuantity());
+            map.put("price", row.getPrice());
+            map.put("order_id", id.longValue());
+            batchValues.add(map);
         }
-        try (Connection con = activeConnection.getConnection();
-             PreparedStatement insertOrder = con.prepareStatement(insertCommands.get(0));
-             PreparedStatement insertOrderRows = con.prepareStatement(insertCommands.get(1))) {
-            return insertAndReturnId(insertOrder, insertOrderRows, order);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-        }
+            new SimpleJdbcInsert(template).withTableName("order_row").executeBatch(
+                    batchValues.toArray(new Map[batchValues.size()]));
+        return   id.longValue();
     }
 
     public Order saveOrderAndReturnOrder(Order order) {
-        if (insertAndReturnCommands == null) {
-            insertAndReturnCommands = new SQLReader().readSQL("insertAndSelect.sql");
-        }
-        insertAndReturnCommands.stream().forEach(System.out::println);
-        try ( Connection con = activeConnection.getConnection();
-              PreparedStatement insertOrder = con.prepareStatement(insertAndReturnCommands.get(0));
-              PreparedStatement insertRow = con.prepareStatement(insertAndReturnCommands.get(1));
-              PreparedStatement getOrder = con.prepareStatement(insertAndReturnCommands.get(2))
-              ){
-          Long id = insertAndReturnId(insertOrder, insertRow, order);
-          return  selectOrder(id, getOrder);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        Long id = saveOrderReturningId(order);
+          order.setId(id);
+          return order;
     }
 
     public  List<Order> getAllOrders() {
         if (selectAllCommands == null) {
             selectAllCommands = new SQLReader().readSQL("selectAll.sql");
         }
-        try (Connection con = activeConnection.getConnection();
-             Statement statment = con.createStatement()){
-            ResultSet set = statment.executeQuery(selectAllCommands.get(0));
-            List<Order> ans = new ArrayList<>();
-            HashMap<Long, Order> orderMap = new HashMap<>();
-            while(set.next()) {
-                Long id = set.getLong("id");
-                if (!orderMap.containsKey(id)) {
-                    Order order = new Order(set.getLong("id")
-                            , set.getString("order_number"), null);
-                    orderMap.put(id, order);
-                    ans.add(order);
-                }
-                Long rowId = set.getLong("order_id");
-                if (!set.wasNull()) {
-                    //System.out.println(set.wasNull() + " " + row_id);
-                    OrderRow row = new OrderRow(rowId
-                            , set.getString("item_name"), set.getInt("quantity")
-                            , set.getInt("price"));
-                    if (orderMap.get(rowId).getOrderRows() == null) {
-                        orderMap.get(rowId)
-                                .setOrderRows(new ArrayList<>(List.of(row)));
-                    } else  {
-                       // System.out.println(orderMap.get(row_id).getOrderRows());
-                        orderMap.get(rowId).getOrderRows().add(row);
-                    }
-                }
-            }
-            return ans;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        OrderMapper mapper = new OrderMapper();
+        template.query(selectAllCommands.get(0), mapper);
+        return mapper.getOrders();
     }
 
     public Order getOrder(long id) {
         if (selectOneCommands == null) {
             selectOneCommands = new SQLReader().readSQL("selectOne.sql");
         }
-        try (Connection con = activeConnection.getConnection();
-                PreparedStatement statment = con.prepareStatement(selectOneCommands.get(0))) {
-            return selectOrder(id, statment);
-            } catch(SQLException e){
-                throw new RuntimeException(e);
-            }
+        OrderMapper mapper = new OrderMapper();
+        template.query(selectOneCommands.get(0), new Object[]{id}, mapper);
+        return mapper.getOrders().get(0);
         }
 
-        private Order selectOrder(Long id, PreparedStatement statment) throws SQLException {
-            statment.setLong(1, id);
-            ResultSet set = statment.executeQuery();
-            Order order = null;
-            while (set.next()) {
-                Long row = set.getLong("order_id");
-                if (order == null) {
-                    List<OrderRow> rowOrders = null;
-                    if (!set.wasNull()) {
-                        //System.out.println(set.wasNull());
-                        rowOrders = new ArrayList<>();
-                    }
-                    order = new Order(set.getLong("id"), set.getString("order_number")
-                            , rowOrders);
-                    if (order.getOrderRows() == null) {
-                        continue;
-                    }
-                    //System.out.println(row);
-                }
-                order.getOrderRows().add(new OrderRow( row, set.getString("item_name")
-                        , set.getInt("quantity"), set.getInt("price")));
-            }
-            return order;
+    private class OrderMapper implements RowMapper<Boolean> {
+        private Map<Long, Integer> orderIds = new HashMap<>();
+        private List<Order> orders = new ArrayList<>();
+        public Boolean mapRow(ResultSet rs, int rowNum) throws SQLException {
+         OrderRow row = null;
+         Long id = rs.getLong("id");
+         Long orderId = rs.getLong("order_id");
+         if (!rs.wasNull()) {
+             row = new OrderRow();
+             row.setItemName(rs.getString("item_name"));
+             row.setQuantity(rs.getInt("quantity"));
+             row.setPrice(rs.getInt("price"));
+             row.setOrderId(orderId);
+         }
+         if (orderIds.containsKey(id)) {
+             if (row != null) {
+                 orders.get(orderIds.get(id)).getOrderRows().add(row);
+             }
+         } else {
+             List<OrderRow> rows = null;
+             if (row != null) {
+                 rows = new ArrayList<>(List.of(row));
+             }
+             Order order = new Order(id, rs.getString("order_number"), rows);
+             orderIds.put(id, orders.size());
+             orders.add(order);
+         }
+         return false;
         }
 
-        private Long insertAndReturnId(PreparedStatement insertOrder, PreparedStatement insertOrderRows
-                , Order order) throws SQLException {
-            insertOrder.setString(1, order.getOrderNumber());
-            ResultSet resultSet = insertOrder.executeQuery();
-            if (resultSet.next()) {
-                Long id = resultSet.getLong(1);
-               // System.out.println(id);
-                if (order.getOrderRows() != null) {
-                    // System.out.println(order.getOrderRows());
-                    for (OrderRow row : order.getOrderRows()) {
-                        insertOrderRows.setLong(1, id);
-                        insertOrderRows.setString(2, row.getItemName());
-                        insertOrderRows.setInt(3, row.getQuantity());
-                        insertOrderRows.setInt(4, row.getPrice());
-                        insertOrderRows.addBatch();
-                    }
-                    insertOrderRows.executeBatch();
-                }
-                return id;
-            } else {
-                throw new SQLException("Id not generated");
-            }
+        public List<Order> getOrders() {
+            return orders;
         }
+    }
 
     public void deleteOrder(long parseLong) {
         if (deleteCommands == null) {
             deleteCommands = new SQLReader().readSQL("delete.sql");
         }
-        try (Connection con = activeConnection.getConnection();
-             PreparedStatement deleteOrder = con.prepareStatement(deleteCommands.get(0));
-             PreparedStatement deleteRow = con.prepareStatement(deleteCommands.get(1));
-             ) {
-            con.setAutoCommit(false);
-            deleteOrder.setLong(1, parseLong);
-            deleteRow.setLong(1, parseLong);
-            deleteOrder.executeUpdate();
-            deleteRow.executeUpdate();
-            con.commit();
-        } catch(SQLException e){
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static void setDAO(DatabaseConnection connection) {
-        if (activeOrderDao == null) {
-            activeOrderDao = new OrderDao(connection);
-        } else {
-            activeOrderDao.activeConnection = connection;
-        }
-    }
-
-    public static OrderDao getDAO() {
-        if (activeOrderDao != null && activeOrderDao.activeConnection != null) {
-            return activeOrderDao;
-        } return null;
+        template.execute(deleteCommands.get(0));
+        template.execute(deleteCommands.get(1));
     }
 
     public SQLReader test() {
         return new SQLReader();
     }
-
-
 
     private class SQLReader {
         //private final String resource = "src/main/resources/";

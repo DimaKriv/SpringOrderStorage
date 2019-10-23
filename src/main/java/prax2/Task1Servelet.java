@@ -1,6 +1,7 @@
 package prax2;
 
-import prax2.orderdao.OrderDao;
+import prax2.orderdao.Dao;
+import prax2.orderpojo.ErrorsJson;
 import prax2.orderpojo.Order;
 
 import javax.servlet.annotation.WebServlet;
@@ -22,7 +23,13 @@ public class Task1Servelet extends HttpServlet {
             response.setContentType(APP_JSON);
             String strJson = request.getReader().lines().collect(Collectors.joining("\n"));
             Order order = JsonParser.createOrder(strJson);
-            response.getWriter().println(JsonParser.createJson(OrderDao.getDAO().saveOrderAndReturnOrder(order)));
+            ErrorsJson orderEroors = new OrderValidation().checkOrder(order);
+            if (orderEroors == null) {
+                response.getWriter().println(JsonParser.createJson(Dao.getDAO().saveOrderAndReturnOrder(order)));
+            } else {
+                response.setStatus(400);
+                response.getWriter().println(JsonParser.createJson(orderEroors));
+            }
         } else {
             response.getWriter().println(request.getContextPath());
         }
@@ -33,13 +40,13 @@ public class Task1Servelet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         if (request.getParameterMap().isEmpty()) {
             response.setContentType(APP_JSON);
-            List<Order> orders = OrderDao.getDAO().getAllOrders();
+            List<Order> orders = Dao.getDAO().getAllOrders();
             String str = JsonParser.createJson(orders);
             response.getWriter().print(str);
         } else {
             String stringID = request.getParameter("id");
             if (stringID.matches("\\d+")) {
-                Order order = OrderDao.getDAO().getOrder(Long.parseLong(stringID));
+                Order order = Dao.getDAO().getOrder(Long.parseLong(stringID));
                 if (order == null)  {
                     response.getWriter().println("Order not exist");
                 }
@@ -57,7 +64,7 @@ public class Task1Servelet extends HttpServlet {
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String stringID = request.getParameter("id");
         if (stringID.matches("\\d+")) {
-            OrderDao.getDAO().deleteOrder(Long.parseLong(stringID));
+            Dao.getDAO().deleteOrder(Long.parseLong(stringID));
         } else {
             response.getWriter().println("Id not specified");
         }

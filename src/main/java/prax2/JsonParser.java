@@ -2,6 +2,7 @@ package prax2;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import prax2.orderpojo.ErrorsJson;
 import prax2.orderpojo.Order;
 
 import java.io.IOException;
@@ -27,14 +28,23 @@ class JsonParser {
         }
     }
 
-    public static String createJson(Order orders) {
+    public static String createJson(Order order) {
         ObjectMapper mapper = new ObjectMapper();
         try {
-            return mapper.writeValueAsString(orders);
+            return mapper.writeValueAsString(order);
         } catch(IOException e) {
             throw new RuntimeException(e);
         }
     }
+    public static String createJson(ErrorsJson er) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.writeValueAsString(er);
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 /*
     public static void main(String[] args) {
         System.out.println(createOrder("{\"orderNumber\":" +
