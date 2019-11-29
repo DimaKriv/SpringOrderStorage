@@ -3,6 +3,7 @@ package prax2.orderdao;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,7 @@ public class DatabaseConnection {
 
     private static final int MAX_CONNECTION_POOL = 2;
 
-    @Bean
+    @Bean(destroyMethod = "close")
     public BasicDataSource createBasicDataSource() {
         ConnectionInfo info = new ConnectionInfo(env.getProperty("dbUrl")
                 , env.getProperty("dbUser"), env.getProperty("dbPassword"));
@@ -29,6 +30,13 @@ public class DatabaseConnection {
         return basicDataSource;
     }
 
-
+    @Profile("hsql")
+    @Bean(destroyMethod = "close")
+    public BasicDataSource createHsql() {
+        BasicDataSource basicDataSource = new BasicDataSource();
+        basicDataSource.setDriverClassName("org.hsqldb.jdbcDriver");
+        basicDataSource.setUrl(env.getProperty("dbHsql"));
+        return basicDataSource;
+    }
 }
 

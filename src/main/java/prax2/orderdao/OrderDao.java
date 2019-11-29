@@ -24,7 +24,7 @@ public class OrderDao {
     //private List<String> insertCommands = null;
     private List<String> selectAllCommands = null;
     private List<String> selectOneCommands = null;
-   // private List<String> insertAndReturnCommands = null;
+    // private List<String> insertAndReturnCommands = null;
     private List<String> deleteCommands = null;
 
     @Autowired
@@ -36,6 +36,9 @@ public class OrderDao {
         var orderNumber = Map.of("order_number", order.getOrderNumber());
         Number id =  new SimpleJdbcInsert(template).withTableName("order_task")
                 .usingGeneratedKeyColumns("id").executeAndReturnKey(orderNumber);
+        if (order.getOrderRows() == null) {
+            return id.longValue();
+        }
         List<Map<String, Object>> batchValues = new ArrayList<>(order.getOrderRows().size());
         for (OrderRow row : order.getOrderRows()) {
             Map<String, Object> map = new HashMap<>();
@@ -53,7 +56,10 @@ public class OrderDao {
     public Order saveOrderAndReturnOrder(Order order) {
         Long id = saveOrderReturningId(order);
           order.setId(id);
-          return order;
+          if (order.getOrderRows() != null) {
+              order.getOrderRows().forEach(s -> s.setOrderId(id));
+          }
+        return order;
     }
 
     public  List<Order> getAllOrders() {

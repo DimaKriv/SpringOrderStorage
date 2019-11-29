@@ -10,9 +10,11 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.DatabasePopulatorUtils;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
+@EnableWebMvc
 @Configuration
-@ComponentScan(basePackages = {"prax2.orderdao"})
+@ComponentScan(basePackages = {"prax2.orderdao", "prax2.controller"})
 public class Config {
 
     @Bean
@@ -24,8 +26,9 @@ public class Config {
     @Bean
     @Profile("restart")
     public JdbcTemplate getTemplateAndRestart(BasicDataSource source) {
-       var populator = new ResourceDatabasePopulator(new ClassPathResource("populate.sql"));
+        var populator = new ResourceDatabasePopulator(new ClassPathResource("populate.sql"));
         DatabasePopulatorUtils.execute(populator, source);
         return new JdbcTemplate(source);
     }
+
 }

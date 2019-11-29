@@ -5,13 +5,15 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 
+import javax.validation.constraints.Min;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderRow {
     private  Long orderId = -1L;
     @NonNull private String itemName;
-    @NonNull private  Integer quantity;
-    @NonNull private  Integer price;
+    @Min(1) @NonNull private  Integer quantity;
+    @Min(1) @NonNull private  Integer price;
 
 }
