@@ -17,6 +17,7 @@ public class DatabaseConnection {
 
     private static final int MAX_CONNECTION_POOL = 2;
 
+    @Profile("psql")
     @Bean(destroyMethod = "close")
     public BasicDataSource createBasicDataSource() {
         ConnectionInfo info = new ConnectionInfo(env.getProperty("dbUrl")
@@ -30,12 +31,13 @@ public class DatabaseConnection {
         return basicDataSource;
     }
 
-    @Profile("hsql")
+    // @Profile("hsql")
     @Bean(destroyMethod = "close")
     public BasicDataSource createHsql() {
         BasicDataSource basicDataSource = new BasicDataSource();
         basicDataSource.setDriverClassName("org.hsqldb.jdbcDriver");
         basicDataSource.setUrl(env.getProperty("dbHsql"));
+        basicDataSource.setMaxTotal(MAX_CONNECTION_POOL);
         return basicDataSource;
     }
 }
