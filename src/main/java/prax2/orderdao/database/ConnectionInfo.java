@@ -1,4 +1,4 @@
-package prax2.orderdao;
+package prax2.orderdao.database;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

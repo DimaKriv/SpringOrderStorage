@@ -1,4 +1,4 @@
-package prax2.orderdao;
+package prax2.orderdao.database;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.springframework.beans.factory.annotation.Autowired;

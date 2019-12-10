@@ -2,6 +2,8 @@ package prax2.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,6 +16,8 @@ import prax2.PaymentPlan;
 import prax2.orderdao.OrderDao;
 import prax2.orderpojo.Installment;
 import prax2.orderpojo.Order;
+import prax2.orderpojo.User;
+
 import javax.validation.Valid;
 import java.time.LocalDate;
 import java.util.AbstractMap;
@@ -22,6 +26,7 @@ import java.util.List;
 
 
 @RestController
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SpringController {
 
     @Autowired
@@ -78,7 +83,22 @@ public class SpringController {
         }
         return installments;
     }
+    @GetMapping(URL_ORDER_END + "users")
+    public List<User> getUserList() {
+        return dao.getAllUsers();
+    }
 
+    @GetMapping(URL_ORDER_END + "users/{username}")
+    @PreAuthorize("#username == authentication.name or hasRole('ROLE_ADMIN')")
+    public User getUser(@PathVariable String username) {
+      return dao.getUser(username);
+    }
+
+
+    @GetMapping(URL_ORDER_END + "version")
+    public String getVersion() {
+        return "1.0";
+    }
     /*
     public static void main(String[] args) {
         Validator v  = Validation.buildDefaultValidatorFactory().getValidator();

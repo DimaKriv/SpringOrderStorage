@@ -31,6 +31,7 @@ public class Config {
             , @Qualifier("dialect") String  dialect) {
         var populator = new ResourceDatabasePopulator(
                 new ClassPathResource("schema.sql"));
+        populator.addScript(new ClassPathResource("security_schema.sql"));
         DatabasePopulatorUtils.execute(populator, dataSource);
         LocalContainerEntityManagerFactoryBean factory =
                 new LocalContainerEntityManagerFactoryBean();

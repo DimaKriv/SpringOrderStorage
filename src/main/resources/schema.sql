@@ -17,3 +17,5 @@ CREATE TABLE order_row (
                             FOREIGN KEY (orders_id)
                                 REFERENCES order_task ON DELETE CASCADE
 );
+
+INSERT INTO order_task(order_number) VALUES ('test');

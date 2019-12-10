@@ -1,5 +1,6 @@
 package prax2.orderdao;
 
+import prax2.orderpojo.User;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import prax2.orderpojo.Order;
@@ -34,4 +35,16 @@ public class OrderDao {
     public void deleteOrder(Long id) {
         em.remove(em.find(Order.class, id));
     }
+
+    @Transactional
+    public List<User> getAllUsers() {
+        return em.createQuery("select o from User o", User.class).getResultList();
+    }
+    @Transactional
+    public User getUser(String id) {
+        return em.find(User.class, id);
+    }
+
 }
+
+
