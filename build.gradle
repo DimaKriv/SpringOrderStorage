@@ -91,6 +91,7 @@ dependencies {
     testCompile group: "org.springframework",
             name: "spring-test",
             version: "5.2.1.RELEASE"
+
     testCompile group: 'org.springframework.security',
             name: 'spring-security-test',
             version: "5.2.1.RELEASE"
